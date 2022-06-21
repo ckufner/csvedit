@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.VisualBasic.FileIO;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -6,21 +7,22 @@ namespace CSVEdit
 {
     internal class FileIOHelper
     {
-        public static List<string[]> ReadCSV(string fileName, EncodingInfo encodingInfo, bool limit)
+        public static List<string[]> ReadCSV(string fileName, EncodingInfo encodingInfo, string delimiter, bool limit)
         {
             var content = new List<string[]>();
-
+            
             using(var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
             {
-                using (var streamReader = new StreamReader(fileStream, encodingInfo.GetEncoding()))
+                using(var parser = new TextFieldParser(fileStream, encodingInfo.GetEncoding()))
                 {
-                    while (!streamReader.EndOfStream)
-                    {
-                        var line = streamReader.ReadLine();
-                        var columns = line.Split(';');
-                        content.Add(columns);
+                    parser.TextFieldType = FieldType.Delimited;
+                    parser.SetDelimiters(delimiter);
 
-                        if (limit && content.Count > 2) break;
+                    while (!parser.EndOfData)
+                    {
+                        content.Add(parser.ReadFields());
+
+                        if (limit && content.Count > 11) break;
                     }
                 }
             }
@@ -28,7 +30,7 @@ namespace CSVEdit
             return content;
         }
 
-        public static FileInfo WriteCSV(string originalFilePath, List<string> headers, List<List<string>> content, EncodingInfo encodingInfo)
+        public static FileInfo WriteCSV(string originalFilePath, List<string> headers, List<List<string>> content, EncodingInfo encodingInfo, string delimiter)
         {
             var modifiedFile = GetModifiedFileName(originalFilePath);
 
@@ -38,11 +40,11 @@ namespace CSVEdit
             {
                 using (var streamWriter = new StreamWriter(fileStream, encodingInfo.GetEncoding()))
                 {
-                    streamWriter.Write(CreateLine(headers));
+                    streamWriter.Write(CreateLine(headers, delimiter));
                     foreach (var line in content)
                     {
                         streamWriter.WriteLine();
-                        streamWriter.Write(CreateLine(line));
+                        streamWriter.Write(CreateLine(line, delimiter));
                     }
                 }
             }
@@ -62,15 +64,19 @@ namespace CSVEdit
             );
         }
 
-        private static string CreateLine(List<string> columns)
+        private static string CreateLine(List<string> columns, string delimiter)
         {
             var stringBuilder = new StringBuilder();
 
             foreach(var column in columns)
             {
-                if (stringBuilder.Length > 0) stringBuilder.Append(";");
+                if (stringBuilder.Length > 0) stringBuilder.Append(delimiter);
 
-                stringBuilder.Append(column);
+                var internalColum = column;
+                if (internalColum.Contains("\"")) internalColum = internalColum.Replace("\"", "\"\"");
+                if (internalColum.Contains(delimiter)) internalColum = "\"" + internalColum + "\"";
+
+                stringBuilder.Append(internalColum);
             }
 
             return stringBuilder.ToString();

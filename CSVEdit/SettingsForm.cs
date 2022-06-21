@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CSVEdit
@@ -17,6 +12,9 @@ namespace CSVEdit
             InitializeComponent();
 
             this.fileName = fileName;
+
+            this.txtDelimiter.MaxLength = 1;
+            this.txtDelimiter.Text = ";";
         }
 
         private readonly string fileName;
@@ -26,7 +24,17 @@ namespace CSVEdit
             get
             {
                 var selectedIndex = this.cmbReadEncoding.SelectedIndex;
+                if (selectedIndex == -1) return null;
+
                 return this.cmbReadEncoding.Items[selectedIndex] as EncodingInfo;
+            }
+        }
+
+        public String SelectedDelimiter
+        {
+            get
+            {
+                return this.txtDelimiter.Text;
             }
         }
 
@@ -35,6 +43,8 @@ namespace CSVEdit
             get
             {
                 var selectedIndex = this.cmbWriteEncoding.SelectedIndex;
+                if (selectedIndex == -1) return null;
+
                 return this.cmbWriteEncoding.Items[selectedIndex] as EncodingInfo;
             }
         }
@@ -79,9 +89,14 @@ namespace CSVEdit
 
         private void LoadPreview()
         {
+            if (this.SelectedReadEncoding == null) return;
+            if (!this.IsDelimiterValid()) return;
+            
+
+
             try
             {
-                var fileContent = FileIOHelper.ReadCSV(this.fileName, SelectedReadEncoding, true);
+                var fileContent = FileIOHelper.ReadCSV(this.fileName, SelectedReadEncoding, this.SelectedDelimiter, true);
 
                 this.dataGridPreview.DataSource = DataGridHelper.CreateDataTable(fileContent);
                 foreach (DataGridViewColumn column in this.dataGridPreview.Columns)
@@ -101,12 +116,32 @@ namespace CSVEdit
             }
         }
 
+        private bool IsDelimiterValid()
+        {
+            if (this.txtDelimiter.Text.Length != 1)
+            {
+                MessageBox.Show("Es muss ein Trennzeichen eingegeben werden!", "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.txtDelimiter.Focus();
+
+                return false;
+            }
+
+            return true;
+        }
+
         private void btnOk_Click(object sender, EventArgs e)
         {
+            if(!this.IsDelimiterValid()) return;
+
             this.DialogResult = DialogResult.OK;
         }
 
         private void cmbReadEncoding_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            this.LoadPreview();
+        }
+
+        private void txtDelimiter_TextChanged(object sender, EventArgs e)
         {
             this.LoadPreview();
         }

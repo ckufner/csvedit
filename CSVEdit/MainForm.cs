@@ -69,6 +69,8 @@ namespace CSVEdit
             }
         }
 
+        private String SelectedDelimiter { get; set; }
+
         private bool UnsavedChanges { get; set; }
 
         public MainForm()
@@ -103,8 +105,9 @@ namespace CSVEdit
 
                         SelectedReadEncoding = settingsForm.SelectedReadEncoding;
                         SelectedWriteEncoding = settingsForm.SelectedWriteEncoding;
+                        SelectedDelimiter = settingsForm.SelectedDelimiter;
 
-                        var fileContent = FileIOHelper.ReadCSV(FileName, SelectedReadEncoding, false);
+                        var fileContent = FileIOHelper.ReadCSV(FileName, SelectedReadEncoding, SelectedDelimiter, false);
 
                         this.dataGrid.DataSource = DataGridHelper.CreateDataTable(fileContent);
                         this.dataGrid.AllowUserToAddRows = settingsForm.AllowAddRemoveRows;
@@ -145,7 +148,7 @@ namespace CSVEdit
 
             try
             {
-                var modifiedFile = FileIOHelper.WriteCSV(FileName, headers, content, SelectedWriteEncoding);
+                var modifiedFile = FileIOHelper.WriteCSV(FileName, headers, content, SelectedWriteEncoding, SelectedDelimiter);
 
                 stringBuilder.AppendLine("Datei gespeichert unter");
                 stringBuilder.Append(modifiedFile.FullName);
